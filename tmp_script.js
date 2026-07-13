@@ -120,10 +120,22 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
 
     function prepareDataset(rows) {
       const header = rows[0] || [];
-      const totalsRow = rows.find(row => row[0] && row[0].toString().toUpperCase() === 'TOTAL');
-      const dayLabels = header.slice(1).map((_, index) => `Día ${index + 1}`);
-      const dayTotals = totalsRow ? totalsRow.slice(1).map(value => Number(value || 0)) : [];
-      return { dayLabels, dayTotals };
+      const totalsRow = rows.find(row => row[0] && row[0].toString().trim().toUpperCase() === 'TOTAL');
+      const dayLabels = header.slice(1).map((value, index) => {
+        const label = value ? value.toString().trim() : '';
+        return label ? `Día ${label}` : `Día ${index + 1}`;
+      });
+      let dayTotals = [];
+      if (totalsRow) {
+        dayTotals = totalsRow.slice(1).map(value => Number(value || 0));
+      } else {
+        const dataRows = rows.slice(1).filter(row => row.length > 1);
+        const columns = header.length - 1;
+        dayTotals = Array.from({ length: columns }, (_, columnIndex) =>
+          dataRows.reduce((sum, row) => sum + Number(row[columnIndex + 1] || 0), 0)
+        );
+      }
+      return { header, dayLabels, dayTotals };
     }
 
     function computeSummary(cedulasData, pasaportesData) {
@@ -462,15 +474,15 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       if (state.currentPage > pageCount) state.currentPage = pageCount;
       const start = (state.currentPage - 1) * state.pageSize;
       const paginated = records.slice(start, start + state.pageSize);
-      elements.tableBody.innerHTML = paginated.map(row => `
+      elements.tableBody.innerHTML = paginated.length ? paginated.map(row => `
         <tr>
           ${state.visibleColumns.day ? `<td>${row.day}</td>` : ''}
           ${state.visibleColumns.cedulas ? `<td>${formatNumber(row.cedulas)}</td>` : ''}
           ${state.visibleColumns.pasaportes ? `<td>${formatNumber(row.pasaportes)}</td>` : ''}
           ${state.visibleColumns.total ? `<td>${formatNumber(row.total)}</td>` : ''}
         </tr>
-      `).join('');
-      elements.tableSummary.textContent = `Mostrando ${paginated.length} de ${records.length} registros`; 
+      `).join('') : `<tr><td colspan="4" class="text-center text-muted">No hay registros para mostrar</td></tr>`;
+      elements.tableSummary.textContent = `Mostrando ${paginated.length} de ${records.length} registros`;
       renderPagination(pageCount);
       toggleTableColumns();
     }
@@ -560,6 +572,7 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     }
 
     async function loadDefaultData() {
+      showLoading('Cargando datos del dashboard...');
       try {
         const [cedulasResponse, pasaportesResponse] = await Promise.all([
           fetch('./Cedulas.csv'),
@@ -578,6 +591,7 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
         setStatus('Datos embebidos cargados. Use el botón Cargar CSV para actualizar manualmente.');
       }
       refreshDashboard();
+      hideLoading();
     }
 
     function applyCsvData(type, text) {
@@ -585,6 +599,17 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       const dataset = prepareDataset(rows);
       if (type === 'cedulas') state.cedulas = dataset;
       if (type === 'pasaportes') state.pasaportes = dataset;
+    }
+
+    function showLoading(message = 'Cargando...') {
+      const overlay = document.getElementById('loadingOverlay');
+      const text = document.getElementById('loadingText');
+      overlay.classList.add('active');
+      text.textContent = message;
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('active');
     }
 
     function refreshDashboard() {
@@ -596,32 +621,37 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       renderCharts(state.summary);
       refreshTable(state.summary);
     }
-
     function handleFileUpload(files) {
       const fileArray = Array.from(files);
       if (fileArray.length === 0) return;
-      const promises = fileArray.map(file => file.text().then(text => ({ name: file.name.toLowerCase(), text })));
+      showLoading('Procesando archivos CSV...');
+      const promises = fileArray.map(file => file.text().then(text => ({ name: file.name, lowercase: file.name.toLowerCase(), text })));
       Promise.all(promises).then(filesLoaded => {
         let updated = 0;
         filesLoaded.forEach(file => {
-          if (file.name.includes('cedula')) {
+          const normalizedName = file.lowercase.normalize('NFD').replace(/[̀-ͯ]/g, "");
+          if (/cedul/i.test(normalizedName)) {
             applyCsvData('cedulas', file.text);
             updated += 1;
-          } else if (file.name.includes('pasaporte')) {
+          } else if (/pasaport/i.test(normalizedName)) {
             applyCsvData('pasaportes', file.text);
             updated += 1;
+          } else if (file.text.toLowerCase().includes('hora/día') && file.text.toLowerCase().includes('total')) {
+            if (!state.cedulas) { applyCsvData('cedulas', file.text); updated += 1; }
+            else if (!state.pasaportes) { applyCsvData('pasaportes', file.text); updated += 1; }
           }
         });
         if (updated === 0) {
-          setStatus('Archivos no identificados. Asegúrese de seleccionar Cedulas.csv y Pasaportes.csv.');
+          setStatus('Archivos no identificados. Seleccione Cedulas.csv y Pasaportes.csv.');
+          hideLoading();
           return;
         }
-        if (!state.cedulas || !state.pasaportes) {
-          if (!state.cedulas) applyCsvData('cedulas', defaultCsv.cedulas);
-          if (!state.pasaportes) applyCsvData('pasaportes', defaultCsv.pasaportes);
-        }
         refreshDashboard();
-        setStatus('Datos actualizados desde los archivos cargados.');
+        setStatus('Datos actualizados correctamente desde los archivos cargados.');
+        hideLoading();
+      }).catch(() => {
+        setStatus('Error leyendo los archivos. Intente nuevamente con CSV válidos.');
+        hideLoading();
       });
     }
 
