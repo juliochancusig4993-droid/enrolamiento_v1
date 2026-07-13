@@ -434,6 +434,111 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
+    .main-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 32px;
+      background: linear-gradient(135deg, rgba(95, 140, 255, 0.14), transparent 42%, rgba(56, 215, 255, 0.08));
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .topbar,
+    .dashboard-toolbar,
+    .panel-card,
+    .kpi-card,
+    .chart-card,
+    .table-responsive {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none;
+      box-shadow: 0 16px 38px rgba(79, 123, 245, 0.24);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    .btn-soft {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .btn-soft:hover {
+      background: rgba(255,255,255,0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(2, 10, 30, 0.16);
+    }
+
+    .dashboard-toolbar .status-bar {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 8px 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .chart-card,
+    .panel-card,
+    .kpi-card {
+      box-shadow: 0 20px 55px rgba(3, 9, 24, 0.28);
+    }
+
+    .chart-fallback {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      border: 1px dashed rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .table-responsive table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table thead th {
+      background: rgba(95, 140, 255, 0.14);
+      color: #f4f8ff;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+      background: rgba(95, 140, 255, 0.14);
+    }
+
+    .form-control,
+    .form-select {
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .form-control::placeholder {
+      color: rgba(224, 235, 255, 0.6);
+    }
+
+    .input-group-text {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border-color: rgba(255,255,255,0.08);
+    }
+
     .ai-report {
       line-height: 1.75;
       color: var(--text);
@@ -448,17 +553,6 @@
       font-size: 0.92rem;
       text-align: center;
       padding-top: 12px;
-    }
-
-    .btn-soft {
-      color: var(--text);
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .btn-soft:hover {
-      background: rgba(255,255,255,0.12);
-      transform: translateY(-1px);
     }
 
     .nav-link {
@@ -852,9 +946,45 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     }
 
     function parseCsv(text) {
-      const parsed = Papa.parse(text.trim(), { delimiter: ',', skipEmptyLines: true });
-      const rows = parsed.data.map(row => row.map(cell => (typeof cell === 'string' ? cell.trim() : cell)));
-      return rows;
+      const normalized = (text || '').replace(/\r\n/g, '\n').trim();
+      if (window.Papa && typeof window.Papa.parse === 'function') {
+        const parsed = window.Papa.parse(normalized, { delimiter: ',', skipEmptyLines: true });
+        return parsed.data.map(row => row.map(cell => (typeof cell === 'string' ? cell.trim() : cell)));
+      }
+
+      const rows = [];
+      let row = [];
+      let value = '';
+      let inQuotes = false;
+
+      for (let index = 0; index < normalized.length; index += 1) {
+        const char = normalized[index];
+        if (char === '"') {
+          if (inQuotes && normalized[index + 1] === '"') {
+            value += '"';
+            index += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(value);
+          value = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          row.push(value);
+          if (row.some(cell => cell !== '')) rows.push(row);
+          row = [];
+          value = '';
+        } else {
+          value += char;
+        }
+      }
+
+      if (value.length || row.length) {
+        row.push(value);
+        if (row.some(cell => cell !== '')) rows.push(row);
+      }
+
+      return rows.map(entry => entry.map(cell => (typeof cell === 'string' ? cell.trim() : cell)));
     }
 
     function prepareDataset(rows) {
@@ -1015,11 +1145,25 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     }
 
     function renderChart(canvasId, config) {
-      const context = document.getElementById(canvasId).getContext('2d');
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return null;
+      const wrapper = canvas.parentElement;
+      if (typeof window.Chart === 'undefined') {
+        wrapper.innerHTML = `
+          <div class="chart-fallback">
+            <div>
+              <p class="mb-2">Visualización sin librería externa</p>
+              <small>Los KPIs y la tabla siguen actualizados con los datos cargados.</small>
+            </div>
+          </div>
+        `;
+        return null;
+      }
+      const context = canvas.getContext('2d');
       if (chartConfigs[canvasId]) {
         chartConfigs[canvasId].destroy();
       }
-      chartConfigs[canvasId] = new Chart(context, config);
+      chartConfigs[canvasId] = new window.Chart(context, config);
       return chartConfigs[canvasId];
     }
 
@@ -1269,17 +1413,22 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     }
 
     function downloadExcel() {
+      if (typeof window.XLSX === 'undefined') {
+        downloadCsv();
+        setStatus('Excel no está disponible en este entorno. Se descargó una copia CSV equivalente.');
+        return;
+      }
       const headers = Object.keys(state.visibleColumns).filter(key => state.visibleColumns[key]);
-      const worksheet = XLSX.utils.json_to_sheet(state.tableRecords.map(record => {
+      const worksheet = window.XLSX.utils.json_to_sheet(state.tableRecords.map(record => {
         const row = {};
         headers.forEach(key => {
           row[{ day: 'Día', cedulas: 'Cédulas', pasaportes: 'Pasaportes', total: 'Total' }[key] || key] = record[key];
         });
         return row;
       }));
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen');
-      XLSX.writeFile(workbook, 'enrolamientos_resumen.xlsx');
+      const workbook = window.XLSX.utils.book_new();
+      window.XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen');
+      window.XLSX.writeFile(workbook, 'enrolamientos_resumen.xlsx');
     }
 
     function printDashboard() {
@@ -1287,10 +1436,14 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     }
 
     async function exportPdf() {
+      if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+        setStatus('La exportación a PDF no está disponible sin las librerías externas.');
+        return;
+      }
       const container = document.querySelector('.main-panel');
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#0b172a' });
+      const canvas = await window.html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#0b172a' });
       const imageData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jspdf.jsPDF('landscape', 'mm', 'a4');
+      const pdf = new window.jspdf.jsPDF('landscape', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgProps = pdf.getImageProperties(imageData);
@@ -1298,6 +1451,7 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
       pdf.addImage(imageData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
       pdf.save('dashboard_enrolamiento.pdf');
+      setStatus('Reporte exportado como PDF.');
     }
 
     function downloadAllCharts() {
@@ -1379,7 +1533,9 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       renderAiReport(state.summary);
       renderCharts(state.summary);
       refreshTable(state.summary);
+      setStatus(state.lastSource === 'archivos' ? 'Datos actualizados correctamente.' : 'Datos cargados desde la fuente por defecto.');
     }
+
     function readFileContent(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
