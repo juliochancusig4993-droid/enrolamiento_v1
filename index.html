@@ -114,7 +114,7 @@
     .loading-overlay {
       position: absolute;
       inset: 0;
-      display: grid;
+      display: none;
       place-items: center;
       background: rgba(4, 8, 22, 0.94);
       color: #e8f4ff;
@@ -125,10 +125,11 @@
       backdrop-filter: blur(8px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.25s ease, display 0.1s ease;
     }
 
     .loading-overlay.active {
+      display: grid;
       opacity: 1;
       pointer-events: all;
     }
@@ -1317,9 +1318,15 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
         applyCsvData('pasaportes', defaultCsv.pasaportes);
         state.lastSource = 'embebido';
         setStatus('Datos embebidos cargados. Use el botón Cargar CSV para actualizar manualmente.');
+      } finally {
+        try {
+          refreshDashboard();
+        } catch (error) {
+          setStatus('Error al renderizar el dashboard. Revise los datos de entrada.');
+          console.error(error);
+        }
+        hideLoading();
       }
-      refreshDashboard();
-      hideLoading();
     }
 
     function applyCsvData(type, text) {
@@ -1332,12 +1339,16 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
     function showLoading(message = 'Cargando...') {
       const overlay = document.getElementById('loadingOverlay');
       const text = document.getElementById('loadingText');
+      overlay.style.display = 'grid';
       overlay.classList.add('active');
       text.textContent = message;
     }
 
     function hideLoading() {
-      document.getElementById('loadingOverlay').classList.remove('active');
+      const overlay = document.getElementById('loadingOverlay');
+      if (!overlay) return;
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
     }
 
     function refreshDashboard() {
