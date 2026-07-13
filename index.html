@@ -729,7 +729,7 @@
     </div>
   </div>
 
-  <input type="file" id="csvLoader" accept=".csv" multiple hidden />
+  <input type="file" id="csvLoader" accept=".csv" multiple style="position:absolute; width:0; height:0; opacity:0; pointer-events:none;" />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" crossorigin="anonymous"></script>
@@ -1348,9 +1348,11 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
 
     function normalizeString(value) {
       return String(value || '')
+        .replace(/^@file:/i, '')
+        .trim()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^ -]/g, '')
+        .replace(/[^ -\u007f]/g, '')
         .toLowerCase();
     }
 
@@ -1415,6 +1417,13 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
             }
           }
         });
+
+        if (updated === 0 && filesLoaded.length === 2) {
+          applyCsvData('cedulas', filesLoaded[0].text);
+          applyCsvData('pasaportes', filesLoaded[1].text);
+          updated = 2;
+        }
+
         if (updated === 0) {
           setStatus('Archivos no identificados. Seleccione Cedulas.csv y Pasaportes.csv.');
           hideLoading();
