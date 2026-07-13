@@ -589,9 +589,15 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
         applyCsvData('pasaportes', defaultCsv.pasaportes);
         state.lastSource = 'embebido';
         setStatus('Datos embebidos cargados. Use el botón Cargar CSV para actualizar manualmente.');
+      } finally {
+        try {
+          refreshDashboard();
+        } catch (error) {
+          setStatus('Error al renderizar el dashboard. Revise los datos de entrada.');
+          console.error(error);
+        }
+        hideLoading();
       }
-      refreshDashboard();
-      hideLoading();
     }
 
     function applyCsvData(type, text) {
@@ -601,15 +607,27 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       if (type === 'pasaportes') state.pasaportes = dataset;
     }
 
+    function normalizeString(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^ -]/g, '')
+        .toLowerCase();
+    }
+
     function showLoading(message = 'Cargando...') {
       const overlay = document.getElementById('loadingOverlay');
       const text = document.getElementById('loadingText');
+      overlay.style.display = 'grid';
       overlay.classList.add('active');
       text.textContent = message;
     }
 
     function hideLoading() {
-      document.getElementById('loadingOverlay').classList.remove('active');
+      const overlay = document.getElementById('loadingOverlay');
+      if (!overlay) return;
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
     }
 
     function refreshDashboard() {
@@ -621,24 +639,41 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
       renderCharts(state.summary);
       refreshTable(state.summary);
     }
+    function readFileContent(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, lowercase: file.name.toLowerCase(), text: reader.result });
+        reader.onerror = () => reject(reader.error || new Error('Error leyendo archivo'));
+        reader.readAsText(file, 'UTF-8');
+      });
+    }
+
     function handleFileUpload(files) {
       const fileArray = Array.from(files);
       if (fileArray.length === 0) return;
       showLoading('Procesando archivos CSV...');
-      const promises = fileArray.map(file => file.text().then(text => ({ name: file.name, lowercase: file.name.toLowerCase(), text })));
+      const promises = fileArray.map(file => readFileContent(file));
       Promise.all(promises).then(filesLoaded => {
         let updated = 0;
         filesLoaded.forEach(file => {
-          const normalizedName = file.lowercase.normalize('NFD').replace(/[̀-ͯ]/g, "");
+          const normalizedName = normalizeString(file.name);
+          const textNormalized = normalizeString(file.text);
+          const isCsvHeader = textNormalized.includes('hora') && textNormalized.includes('total');
+
           if (/cedul/i.test(normalizedName)) {
             applyCsvData('cedulas', file.text);
             updated += 1;
           } else if (/pasaport/i.test(normalizedName)) {
             applyCsvData('pasaportes', file.text);
             updated += 1;
-          } else if (file.text.toLowerCase().includes('hora/día') && file.text.toLowerCase().includes('total')) {
-            if (!state.cedulas) { applyCsvData('cedulas', file.text); updated += 1; }
-            else if (!state.pasaportes) { applyCsvData('pasaportes', file.text); updated += 1; }
+          } else if (isCsvHeader) {
+            if (!state.cedulas) {
+              applyCsvData('cedulas', file.text);
+              updated += 1;
+            } else if (!state.pasaportes) {
+              applyCsvData('pasaportes', file.text);
+              updated += 1;
+            }
           }
         });
         if (updated === 0) {
@@ -646,10 +681,16 @@ TOTAL,2337,438,2670,2136,2074,205,27,2553,2153,1969,1837,2108,105,143,2202,1965,
           hideLoading();
           return;
         }
-        refreshDashboard();
-        setStatus('Datos actualizados correctamente desde los archivos cargados.');
+        try {
+          refreshDashboard();
+          setStatus('Datos actualizados correctamente desde los archivos cargados.');
+        } catch (error) {
+          console.error(error);
+          setStatus('Error al procesar los datos después de cargar los archivos.');
+        }
         hideLoading();
-      }).catch(() => {
+      }).catch(error => {
+        console.error(error);
         setStatus('Error leyendo los archivos. Intente nuevamente con CSV válidos.');
         hideLoading();
       });
