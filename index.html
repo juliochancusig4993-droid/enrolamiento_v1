@@ -1,655 +1,1825 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Operativo — Cédulas y Pasaportes</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Producción | Cédulas & Pasaportes</title>
+  <meta name="description" content="Dashboard analítico de producción mensual de cédulas y pasaportes con análisis inteligente, visualizaciones interactivas y herramientas de exportación.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ========== CSS VARIABLES ========== */
+    :root {
+      --bg-primary: #060a14;
+      --bg-secondary: #0d1321;
+      --bg-tertiary: #141b2d;
+      --bg-card: rgba(20, 27, 45, 0.75);
+      --bg-card-hover: rgba(30, 40, 65, 0.85);
+      --border-subtle: rgba(148, 163, 184, 0.08);
+      --border-glass: rgba(148, 163, 184, 0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-emerald: #10b981;
+      --accent-teal: #14b8a6;
+      --accent-amber: #f59e0b;
+      --accent-orange: #f97316;
+      --accent-rose: #f43f5e;
+      --accent-red: #ef4444;
+      --accent-indigo: #6366f1;
+      --gradient-cedulas: linear-gradient(135deg, #3b82f6, #06b6d4);
+      --gradient-pasaportes: linear-gradient(135deg, #8b5cf6, #ec4899);
+      --gradient-total: linear-gradient(135deg, #10b981, #14b8a6);
+      --gradient-avg: linear-gradient(135deg, #f59e0b, #f97316);
+      --gradient-peak: linear-gradient(135deg, #f43f5e, #ef4444);
+      --gradient-best: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4);
+      --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+      --shadow-glow-purple: 0 0 20px rgba(139, 92, 246, 0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --transition-fast: 0.2s var(--ease-out);
+      --transition-normal: 0.35s var(--ease-out);
+      --transition-slow: 0.5s var(--ease-out);
+    }
 
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-        }
-        .mrz-font {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .glass-card {
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0f19;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f2937;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #374151;
-        }
-    </style>
+    /* ========== RESET & BASE ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 50% 0%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #app { position: relative; z-index: 1; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.35); }
+
+    /* ========== LOADING SCREEN ========== */
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg-primary);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loader-icon {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      background: var(--gradient-cedulas);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      animation: loaderPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes loaderPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { transform: scale(1.08); box-shadow: 0 0 30px 10px rgba(59, 130, 246, 0.15); }
+    }
+    .loader-text { color: var(--text-secondary); font-size: 14px; font-weight: 500; letter-spacing: 0.5px; }
+    .loader-bar { width: 200px; height: 3px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+    .loader-bar-inner {
+      height: 100%; width: 40%; border-radius: 2px;
+      background: var(--gradient-cedulas);
+      animation: loaderSlide 1.2s ease-in-out infinite;
+    }
+    @keyframes loaderSlide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    /* ========== HEADER ========== */
+    #main-header {
+      background: rgba(13, 19, 33, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border-glass);
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      transition: var(--transition-normal);
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-logo {
+      width: 44px; height: 44px;
+      background: var(--gradient-cedulas);
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff;
+      box-shadow: var(--shadow-glow-blue);
+      transition: transform var(--transition-fast);
+    }
+    .header-logo:hover { transform: rotate(-8deg) scale(1.05); }
+    .header-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .header-clock {
+      font-size: 13px; color: var(--text-secondary); font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      background: rgba(255,255,255,0.04);
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+    .header-status {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      font-size: 12px; font-weight: 600; color: var(--accent-emerald);
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent-emerald);
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+    }
+
+    /* ========== ACTION BAR ========== */
+    #action-bar {
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(13, 19, 33, 0.4);
+    }
+    .action-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      backdrop-filter: blur(8px);
+      position: relative; overflow: hidden;
+    }
+    .action-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      opacity: 0; transition: opacity var(--transition-fast);
+    }
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(148, 163, 184, 0.25);
+    }
+    .action-btn:active { transform: translateY(0) scale(0.98); }
+    .action-btn.primary {
+      background: var(--gradient-cedulas);
+      border-color: transparent;
+      color: #fff;
+    }
+    .action-btn.primary:hover { box-shadow: var(--shadow-glow-blue), var(--shadow-md); }
+    .action-btn.export-excel { border-color: rgba(16, 185, 129, 0.3); }
+    .action-btn.export-excel:hover { background: rgba(16, 185, 129, 0.1); border-color: var(--accent-emerald); }
+    .action-btn.export-pdf { border-color: rgba(244, 63, 94, 0.3); }
+    .action-btn.export-pdf:hover { background: rgba(244, 63, 94, 0.1); border-color: var(--accent-rose); }
+    .action-btn.print-btn { border-color: rgba(139, 92, 246, 0.3); }
+    .action-btn.print-btn:hover { background: rgba(139, 92, 246, 0.1); border-color: var(--accent-purple); }
+    .action-btn-icon { font-size: 16px; line-height: 1; }
+    .month-selector {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-secondary); font-size: 14px; font-weight: 600;
+    }
+    .month-selector span { color: var(--accent-blue); }
+
+    /* ========== MAIN CONTENT ========== */
+    #dashboard-content {
+      padding: 24px 32px 40px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 18px; font-weight: 700;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-primary);
+    }
+    .section-title .icon { font-size: 20px; }
+    .section-title .badge {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 12px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* ========== KPI CARDS ========== */
+    #kpi-section { margin-bottom: 28px; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      position: relative; overflow: hidden;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: var(--transition-normal);
+      animation: fadeInUp 0.6s var(--ease-out) both;
+    }
+    .kpi-card:nth-child(1) { animation-delay: 0.05s; }
+    .kpi-card:nth-child(2) { animation-delay: 0.1s; }
+    .kpi-card:nth-child(3) { animation-delay: 0.15s; }
+    .kpi-card:nth-child(4) { animation-delay: 0.2s; }
+    .kpi-card:nth-child(5) { animation-delay: 0.25s; }
+    .kpi-card:nth-child(6) { animation-delay: 0.3s; }
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; border-radius: 3px 3px 0 0;
+    }
+    .kpi-card[data-accent="cedulas"]::before { background: var(--gradient-cedulas); }
+    .kpi-card[data-accent="pasaportes"]::before { background: var(--gradient-pasaportes); }
+    .kpi-card[data-accent="total"]::before { background: var(--gradient-total); }
+    .kpi-card[data-accent="avg"]::before { background: var(--gradient-avg); }
+    .kpi-card[data-accent="peak"]::before { background: var(--gradient-peak); }
+    .kpi-card[data-accent="best"]::before { background: var(--gradient-best); }
+    .kpi-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .kpi-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .kpi-card[data-accent="cedulas"] .kpi-icon { background: rgba(59, 130, 246, 0.12); }
+    .kpi-card[data-accent="pasaportes"] .kpi-icon { background: rgba(139, 92, 246, 0.12); }
+    .kpi-card[data-accent="total"] .kpi-icon { background: rgba(16, 185, 129, 0.12); }
+    .kpi-card[data-accent="avg"] .kpi-icon { background: rgba(245, 158, 11, 0.12); }
+    .kpi-card[data-accent="peak"] .kpi-icon { background: rgba(244, 63, 94, 0.12); }
+    .kpi-card[data-accent="best"] .kpi-icon { background: rgba(99, 102, 241, 0.12); }
+    .kpi-value {
+      font-size: 32px; font-weight: 800; letter-spacing: -1px;
+      line-height: 1.1; margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-card[data-accent="cedulas"] .kpi-value { color: var(--accent-blue); }
+    .kpi-card[data-accent="pasaportes"] .kpi-value { color: var(--accent-purple); }
+    .kpi-card[data-accent="total"] .kpi-value { color: var(--accent-emerald); }
+    .kpi-card[data-accent="avg"] .kpi-value { color: var(--accent-amber); }
+    .kpi-card[data-accent="peak"] .kpi-value { color: var(--accent-rose); }
+    .kpi-card[data-accent="best"] .kpi-value { color: var(--accent-indigo); }
+    .kpi-detail { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== CHARTS ========== */
+    #charts-section { margin-bottom: 28px; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: var(--transition-normal);
+      animation: fadeInUp 0.6s var(--ease-out) both;
+    }
+    .chart-card:nth-child(1) { animation-delay: 0.1s; }
+    .chart-card:nth-child(2) { animation-delay: 0.15s; }
+    .chart-card:nth-child(3) { animation-delay: 0.2s; }
+    .chart-card:nth-child(4) { animation-delay: 0.25s; }
+    .chart-card:hover { border-color: rgba(148, 163, 184, 0.2); }
+    .chart-title {
+      font-size: 14px; font-weight: 700;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-primary);
+    }
+    .chart-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .chart-wrapper { position: relative; height: 300px; }
+    .chart-card.doughnut-card .chart-wrapper { height: 300px; display: flex; align-items: center; justify-content: center; }
+    .chart-card.heatmap-card { grid-column: 1 / -1; }
+    .chart-card.heatmap-card .chart-wrapper { height: auto; overflow-x: auto; }
+
+    /* ========== HEATMAP TABLE ========== */
+    .heatmap-controls {
+      display: flex; gap: 8px; margin-bottom: 12px;
+    }
+    .heatmap-tab {
+      padding: 6px 16px; border-radius: 6px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border-glass);
+      background: transparent; color: var(--text-secondary);
+      cursor: pointer; transition: var(--transition-fast);
+      font-family: 'Inter', sans-serif;
+    }
+    .heatmap-tab.active {
+      background: var(--gradient-cedulas);
+      border-color: transparent;
+      color: #fff;
+    }
+    .heatmap-tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .heatmap-table {
+      border-collapse: separate;
+      border-spacing: 2px;
+      width: 100%;
+      font-size: 11px;
+    }
+    .heatmap-table th {
+      padding: 6px 4px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 10px;
+      text-align: center;
+      position: sticky;
+      background: var(--bg-tertiary);
+    }
+    .heatmap-table th:first-child {
+      left: 0; z-index: 2;
+      text-align: left; padding-left: 8px;
+      min-width: 50px;
+    }
+    .heatmap-table thead th { top: 0; z-index: 3; }
+    .heatmap-table td {
+      text-align: center;
+      padding: 5px 3px;
+      border-radius: 3px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      transition: var(--transition-fast);
+      cursor: default;
+      min-width: 36px;
+      position: relative;
+    }
+    .heatmap-table td:first-child {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: var(--bg-tertiary) !important;
+      position: sticky; left: 0; z-index: 1;
+      text-align: left; padding-left: 8px;
+    }
+    .heatmap-table td:hover:not(:first-child) {
+      transform: scale(1.15);
+      z-index: 5;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+    }
+    .heatmap-table tr:last-child td {
+      font-weight: 800;
+      border-top: 2px solid var(--border-glass);
+    }
+    .heatmap-legend {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 12px; justify-content: flex-end;
+      font-size: 10px; color: var(--text-muted);
+    }
+    .legend-block {
+      width: 20px; height: 12px; border-radius: 2px;
+    }
+
+    /* ========== AI INSIGHTS ========== */
+    #ai-section { margin-bottom: 28px; }
+    .ai-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .ai-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: var(--transition-normal);
+      animation: fadeInUp 0.6s var(--ease-out) both;
+    }
+    .ai-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+    .ai-card-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .ai-card-icon {
+      width: 40px; height: 40px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .ai-card-icon.blue { background: rgba(59, 130, 246, 0.12); }
+    .ai-card-icon.red { background: rgba(244, 63, 94, 0.12); }
+    .ai-card-icon.green { background: rgba(16, 185, 129, 0.12); }
+    .ai-card-icon.purple { background: rgba(139, 92, 246, 0.12); }
+    .ai-card-icon.amber { background: rgba(245, 158, 11, 0.12); }
+    .ai-card-icon.cyan { background: rgba(6, 182, 212, 0.12); }
+    .ai-card-title { font-size: 14px; font-weight: 700; }
+    .ai-card-body { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+    .ai-card-body strong { color: var(--text-primary); font-weight: 600; }
+    .ai-tag {
+      display: inline-block;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 700;
+      margin: 2px 2px;
+    }
+    .ai-tag.positive { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); }
+    .ai-tag.warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+    .ai-tag.critical { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+    .ai-tag.info { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+    .ai-tag.neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
+    .efficiency-bar {
+      width: 100%; height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px; margin-top: 10px;
+      overflow: hidden;
+    }
+    .efficiency-bar-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 1s var(--ease-out);
+    }
+    .efficiency-score {
+      font-size: 36px; font-weight: 900;
+      background: var(--gradient-total);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    /* ========== DATA TABLE ========== */
+    #table-section { margin-bottom: 28px; }
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: fadeInUp 0.6s var(--ease-out) both;
+      animation-delay: 0.3s;
+    }
+    .table-header {
+      padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .table-tabs { display: flex; gap: 4px; }
+    .table-tab {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      border: 1px solid var(--border-glass);
+      background: transparent; color: var(--text-secondary);
+      cursor: pointer; transition: var(--transition-fast);
+      font-family: 'Inter', sans-serif;
+    }
+    .table-tab.active {
+      background: var(--gradient-cedulas);
+      border-color: transparent;
+      color: #fff;
+    }
+    .table-tab:hover:not(.active) { background: rgba(255, 255, 255, 0.05); }
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .data-table thead th {
+      padding: 12px 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky; top: 0; z-index: 2;
+      background: var(--bg-tertiary);
+      text-align: center;
+    }
+    .data-table thead th:first-child { text-align: left; padding-left: 24px; position: sticky; left: 0; z-index: 3; }
+    .data-table tbody td {
+      padding: 10px 10px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-subtle);
+      font-variant-numeric: tabular-nums;
+      transition: background var(--transition-fast);
+    }
+    .data-table tbody td:first-child {
+      font-weight: 700; color: var(--text-secondary);
+      text-align: left; padding-left: 24px;
+      position: sticky; left: 0; z-index: 1;
+      background: var(--bg-tertiary);
+    }
+    .data-table tbody tr:hover td { background: rgba(255, 255, 255, 0.03); }
+    .data-table tbody tr:hover td:first-child { background: rgba(30, 40, 65, 0.9); }
+    .data-table tbody tr.total-row td {
+      font-weight: 800;
+      background: rgba(59, 130, 246, 0.06);
+      border-top: 2px solid var(--accent-blue);
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+    .data-table tbody tr.total-row td:first-child {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--accent-blue);
+    }
+
+    /* ========== UPLOAD MODAL ========== */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: var(--transition-normal);
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      width: 90%; max-width: 560px;
+      box-shadow: var(--shadow-xl);
+      transform: scale(0.95) translateY(20px);
+      transition: transform var(--transition-normal);
+    }
+    .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .modal-close {
+      width: 36px; height: 36px;
+      border-radius: 50%; border: 1px solid var(--border-glass);
+      background: transparent; color: var(--text-secondary);
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition-fast);
+    }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+    .drop-zone {
+      border: 2px dashed var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 40px 24px;
+      text-align: center;
+      transition: var(--transition-fast);
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .drop-zone-icon { font-size: 40px; margin-bottom: 12px; }
+    .drop-zone-text { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .drop-zone-hint { font-size: 12px; color: var(--text-muted); }
+    .file-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      font-size: 13px; font-weight: 500;
+    }
+    .file-item .remove-file {
+      background: none; border: none; color: var(--accent-red);
+      cursor: pointer; font-size: 16px; padding: 2px 6px;
+    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btn {
+      padding: 10px 24px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: 1px solid var(--border-glass);
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition-fast);
+    }
+    .modal-btn.cancel { background: transparent; color: var(--text-secondary); }
+    .modal-btn.cancel:hover { background: rgba(255,255,255,0.05); }
+    .modal-btn.confirm { background: var(--gradient-cedulas); border-color: transparent; color: #fff; }
+    .modal-btn.confirm:hover { box-shadow: var(--shadow-glow-blue); }
+    .modal-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ========== TOAST ========== */
+    #toast-container {
+      position: fixed; top: 80px; right: 24px;
+      z-index: 2000;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-lg);
+      font-size: 13px; font-weight: 500;
+      min-width: 280px;
+      animation: toastIn 0.4s var(--ease-spring) both;
+      backdrop-filter: blur(16px);
+    }
+    .toast.toast-exit { animation: toastOut 0.3s var(--ease-out) forwards; }
+    .toast.success { border-color: rgba(16, 185, 129, 0.3); }
+    .toast.error { border-color: rgba(239, 68, 68, 0.3); }
+    .toast.warning { border-color: rgba(245, 158, 11, 0.3); }
+    .toast.info { border-color: rgba(59, 130, 246, 0.3); }
+    .toast-icon { font-size: 18px; flex-shrink: 0; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px) scale(0.95); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes toastOut {
+      to { opacity: 0; transform: translateX(40px) scale(0.95); }
+    }
+
+    /* ========== FOOTER ========== */
+    #main-footer {
+      text-align: center;
+      padding: 24px 32px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px; color: var(--text-muted);
+    }
+    #main-footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1024px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.heatmap-card { grid-column: auto; }
+      #dashboard-content { padding: 20px 16px 32px; }
+      #main-header { padding: 12px 16px; }
+      #action-bar { padding: 12px 16px; }
+    }
+    @media (max-width: 768px) {
+      .header-right { display: none; }
+      .header-title { font-size: 16px; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .ai-grid { grid-template-columns: 1fr; }
+      .action-btn span:not(.action-btn-icon) { display: none; }
+      .action-btn { padding: 10px 14px; }
+    }
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 26px; }
+    }
+
+    /* ========== PRINT STYLES ========== */
+    @media print {
+      body { background: #fff !important; color: #111 !important; }
+      body::before { display: none; }
+      #main-header, #action-bar, #main-footer,
+      .modal-overlay, #toast-container { display: none !important; }
+      #dashboard-content { padding: 10px; }
+      .kpi-card, .chart-card, .ai-card, .table-card {
+        background: #fff !important;
+        border: 1px solid #ddd !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        color: #111;
+      }
+      .kpi-value, .kpi-label, .kpi-detail,
+      .chart-title, .ai-card-title, .ai-card-body,
+      .section-title, .data-table td, .data-table th {
+        color: #111 !important;
+        -webkit-text-fill-color: #111 !important;
+      }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-wrapper { height: 250px !important; }
+    }
+  </style>
 </head>
-<body class="min-h-screen antialiased p-4 md:p-8">
+<body>
 
-    <div class="max-w-7xl mx-auto space-y-8">
-        
-        <!-- Header & MRZ Dynamic Zone -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-gray-800">
-            <div>
-                <p class="text-xs font-semibold tracking-widest text-indigo-400 uppercase">Sistema de Analítica Operativa</p>
-                <h1 class="text-3xl font-bold tracking-tight mt-1 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                    Control de Emisiones
-                </h1>
-            </div>
-            <!-- MRZ Preview Panel -->
-            <div class="glass-card rounded-xl p-4 w-full md:w-auto min-w-[340px] border-l-4 border-indigo-500 shadow-lg">
-                <div class="flex items-center gap-2 mb-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-[10px] font-medium tracking-wider uppercase text-gray-400">Machine Readable Zone (Simulado)</span>
-                </div>
-                <div id="mrz-container" class="mrz-font text-xs tracking-wider text-gray-300 space-y-0.5 leading-none">
-                    P&lt;ECUDASHBOARD&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>
-                    0000000000ESP0000000M0000000&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;02
-                </div>
-            </div>
-        </header>
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen">
+    <div class="loader-icon">📋</div>
+    <div class="loader-text">Cargando datos de producción...</div>
+    <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+  </div>
 
-        <!-- 00 — Zona de Datos (Carga Avanzada) -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Dropzone Cédulas -->
-                <div id="drop-cedulas" class="glass-card rounded-2xl border-2 border-dashed border-gray-700 hover:border-indigo-500 transition-all p-5 flex flex-col items-center justify-center text-center cursor-pointer group relative overflow-hidden">
-                    <div class="p-3 bg-gray-800/50 rounded-xl mb-3 group-hover:scale-105 transition-transform">
-                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </div>
-                    <span class="text-sm font-semibold text-gray-200">Cargar CSV Cédulas</span>
-                    <span class="text-xs text-gray-400 mt-1">Arrastra o haz clic aquí</span>
-                    <input type="file" id="file-cedulas" accept=".csv" class="hidden">
-                    <div id="status-cedulas" class="absolute bottom-2 text-[11px] font-medium text-emerald-400 hidden">✓ Cargado correctamente</div>
-                </div>
+  <div id="app">
+    <!-- HEADER -->
+    <header id="main-header">
+      <div class="header-left">
+        <div class="header-logo" title="Sistema de Producción Documental">📄</div>
+        <div>
+          <div class="header-title">Sistema de Producción Documental</div>
+          <div class="header-subtitle">Dashboard Analítico</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-clock" id="header-clock"></div>
+        <div class="header-status">
+          <div class="status-dot"></div>
+          Producción Activa
+        </div>
+      </div>
+    </header>
 
-                <!-- Dropzone Pasaportes -->
-                <div id="drop-pasaportes" class="glass-card rounded-2xl border-2 border-dashed border-gray-700 hover:border-violet-500 transition-all p-5 flex flex-col items-center justify-center text-center cursor-pointer group relative overflow-hidden">
-                    <div class="p-3 bg-gray-800/50 rounded-xl mb-3 group-hover:scale-105 transition-transform">
-                        <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-                    </div>
-                    <span class="text-sm font-semibold text-gray-200">Cargar CSV Pasaportes</span>
-                    <span class="text-xs text-gray-400 mt-1">Arrastra o haz clic aquí</span>
-                    <input type="file" id="file-pasaportes" accept=".csv" class="hidden">
-                    <div id="status-pasaportes" class="absolute bottom-2 text-[11px] font-medium text-emerald-400 hidden">✓ Cargado correctamente</div>
-                </div>
-            </div>
-
-            <!-- Controles Adicionales -->
-            <div class="glass-card rounded-2xl p-6 flex flex-col justify-center items-center gap-3">
-                <p class="text-xs text-gray-400 text-center">¿No tienes archivos a la mano? Usa el dataset optimizado de demostración.</p>
-                <button id="btn-restore" class="w-full py-3 px-4 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 border border-gray-600 text-white font-medium rounded-xl text-sm transition-all shadow-md active:scale-[0.98]">
-                    Restaurar Datos Demo
-                </button>
-            </div>
-        </section>
-
-        <!-- 01 — Resumen de Indicadores (KPIs) -->
-        <section class="grid grid-cols-2 lg:grid-cols-6 gap-4">
-            <!-- KPI 1 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                <p class="text-xs font-medium text-gray-400">Total Cédulas</p>
-                <p id="kpi-cedulas" class="text-2xl font-bold mt-2 text-indigo-400">0</p>
-                <div class="absolute -right-2 -bottom-2 opacity-5 text-gray-400"><svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/></svg></div>
-            </div>
-            <!-- KPI 2 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                <p class="text-xs font-medium text-gray-400">Total Pasaportes</p>
-                <p id="kpi-pasaportes" class="text-2xl font-bold mt-2 text-violet-400">0</p>
-            </div>
-            <!-- KPI 3 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden bg-gradient-to-br from-indigo-950/20 to-transparent">
-                <p class="text-xs font-medium text-gray-400">Total General</p>
-                <p id="kpi-total" class="text-2xl font-bold mt-2 text-white">0</p>
-            </div>
-            <!-- KPI 4 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                <p class="text-xs font-medium text-gray-400">Hora Pico</p>
-                <p id="kpi-hora" class="text-2xl font-bold mt-2 text-amber-400">—</p>
-            </div>
-            <!-- KPI 5 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                <p class="text-xs font-medium text-gray-400">Día Concurrente</p>
-                <p id="kpi-dia" class="text-lg font-bold mt-2.5 text-emerald-400 truncate">—</p>
-            </div>
-            <!-- KPI 6 -->
-            <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                <p class="text-xs font-medium text-gray-400">Promedio Diario</p>
-                <p id="kpi-promedio" class="text-2xl font-bold mt-2 text-cyan-400">0</p>
-            </div>
-        </section>
-
-        <!-- 02 — Series y Gráficos -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="glass-card rounded-2xl p-5">
-                <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-gray-200">Tendencia de Emisión Diaria</h3>
-                    <p class="text-xs text-gray-400">Evolución volumétrica en el período actual</p>
-                </div>
-                <div class="h-72"><canvas id="chart-lineas"></canvas></div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-5">
-                <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-gray-200">Distribución por Franja Horaria</h3>
-                    <p class="text-xs text-gray-400">Análisis comparativo acumulado (Escala Logarítmica)</p>
-                </div>
-                <div class="h-72"><canvas id="chart-barras"></canvas></div>
-            </div>
-        </section>
-
-        <!-- 03 — Proyecciones Avanzadas -->
-        <section class="glass-card rounded-2xl p-6">
-            <div class="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-200">Proyección Predictiva de Demanda</h3>
-                    <p class="text-xs text-gray-400">Estimación estadística para los próximos 7 días mediante Regresión Lineal</p>
-                </div>
-                <span class="px-2.5 py-1 text-[11px] font-medium bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 w-fit">Modelo Lineal Integrado</span>
-            </div>
-            <div class="h-80"><canvas id="chart-proyeccion"></canvas></div>
-        </section>
-
-        <!-- 04 & 05 — Matriz de Densidad y Rankings -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Mapa de Calor -->
-            <div class="glass-card rounded-2xl p-5 lg:col-span-2 flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-200">Matriz de Densidad Operativa</h3>
-                        <p class="text-xs text-gray-400">Concentración de turnos por hora y día</p>
-                    </div>
-                    <div class="flex bg-gray-800/60 p-0.5 rounded-lg text-xs font-medium">
-                        <button id="tab-hm-cedulas" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-all">Cédulas</button>
-                        <button id="tab-hm-pasaportes" class="px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all">Pasaportes</button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto flex-1">
-                    <div id="heatmap-container" class="min-w-[500px] grid grid-cols-8 gap-1 text-[10px] p-1">
-                        <!-- Generado Dinámicamente por JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ranking Top 10 -->
-            <div class="glass-card rounded-2xl p-5 flex flex-col">
-                <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-gray-200">Top 10 — Días Críticos</h3>
-                    <p class="text-xs text-gray-400">Fechas con mayor concurrencia registrada</p>
-                </div>
-                <div class="flex-1 overflow-y-auto max-h-[320px] pr-1">
-                    <table class="w-full text-left text-xs text-gray-300">
-                        <thead>
-                            <tr class="text-gray-500 border-b border-gray-800">
-                                <th class="pb-2 font-medium">Fecha</th>
-                                <th class="pb-2 font-medium text-right">Total</th>
-                                <th class="pb-2 font-medium text-right w-1/3">Carga</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ranking-body" class="divide-y divide-gray-800/40">
-                            <!-- Generado dinámicamente -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
+    <!-- ACTION BAR -->
+    <div id="action-bar">
+      <div class="action-group">
+        <button class="action-btn primary" id="btn-upload" title="Cargar archivos CSV">
+          <span class="action-btn-icon">📤</span>
+          <span>Cargar Datos</span>
+        </button>
+        <button class="action-btn" id="btn-reload" title="Recargar datos desde archivos originales">
+          <span class="action-btn-icon">🔄</span>
+          <span>Recargar</span>
+        </button>
+      </div>
+      <div class="action-group">
+        <button class="action-btn export-excel" id="btn-export-excel" title="Exportar a Excel (.xlsx)">
+          <span class="action-btn-icon">📊</span>
+          <span>Exportar Excel</span>
+        </button>
+        <button class="action-btn export-pdf" id="btn-export-pdf" title="Exportar a PDF">
+          <span class="action-btn-icon">📄</span>
+          <span>Exportar PDF</span>
+        </button>
+        <button class="action-btn print-btn" id="btn-print" title="Imprimir dashboard">
+          <span class="action-btn-icon">🖨️</span>
+          <span>Imprimir</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Lógica de Negocio y Controladores -->
-    <script>
-        // --- DATA DE MUESTRA COMPLETAMENTE CONFIGURADA ---
-        const GENERATE_DEMO_DATA = () => {
-            const data = [];
-            const start = new Date(2026, 6, 1); // Julio 2026
-            for (let i = 0; i < 30; i++) {
-                const current = new Date(start);
-                current.setDate(start.getDate() + i);
-                const fechaStr = current.toISOString().split('T')[0];
-                const isWeekend = current.getDay() === 0 || current.getDay() === 6;
-                
-                // Distribución horaria realista
-                for (let h = 8; h <= 17; h++) {
-                    let base = isWeekend ? 5 : 25;
-                    if (h === 12 || h === 13) base *= 1.8; // Hora pico mediodía
-                    
-                    const cantCedulas = Math.floor(Math.random() * base + base * 0.5);
-                    const cantPasaportes = Math.floor(Math.random() * (base * 0.4) + (base * 0.2));
-                    
-                    const horaStr = `${String(h).padStart(2, '0')}:00`;
-                    
-                    if (cantCedulas > 0) data.push({ fecha: fechaStr, hora: horaStr, tipo: 'CEDULA', cantidad: cantCedulas });
-                    if (cantPasaportes > 0) data.push({ fecha: fechaStr, hora: horaStr, tipo: 'PASAPORTE', cantidad: cantPasaportes });
-                }
+    <!-- DASHBOARD CONTENT -->
+    <main id="dashboard-content">
+
+      <!-- KPI SECTION -->
+      <section id="kpi-section">
+        <div class="section-title">
+          <span class="icon">📈</span> Indicadores Clave de Producción
+          <span class="badge" id="kpi-period-badge">Mes Actual</span>
+        </div>
+        <div class="kpi-grid" id="kpi-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- CHARTS SECTION -->
+      <section id="charts-section">
+        <div class="section-title">
+          <span class="icon">📊</span> Análisis Visual
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              <span class="dot" style="background: var(--gradient-cedulas);"></span>
+              Producción Diaria — Cédulas vs Pasaportes
+            </div>
+            <div class="chart-wrapper"><canvas id="chart-daily"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span class="dot" style="background: var(--gradient-pasaportes);"></span>
+              Distribución Horaria de Producción (24h)
+            </div>
+            <div class="chart-wrapper"><canvas id="chart-hourly"></canvas></div>
+          </div>
+          <div class="chart-card doughnut-card">
+            <div class="chart-title">
+              <span class="dot" style="background: var(--gradient-total);"></span>
+              Distribución General
+            </div>
+            <div class="chart-wrapper"><canvas id="chart-doughnut"></canvas></div>
+          </div>
+          <div class="chart-card heatmap-card">
+            <div class="chart-title">
+              <span class="dot" style="background: var(--gradient-peak);"></span>
+              Mapa de Calor — Producción por Hora y Día
+            </div>
+            <div class="heatmap-controls">
+              <button class="heatmap-tab active" data-heatmap="cedulas">Cédulas</button>
+              <button class="heatmap-tab" data-heatmap="pasaportes">Pasaportes</button>
+              <button class="heatmap-tab" data-heatmap="combined">Combinado</button>
+            </div>
+            <div class="chart-wrapper" id="heatmap-wrapper"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI INSIGHTS SECTION -->
+      <section id="ai-section">
+        <div class="section-title">
+          <span class="icon">🤖</span> Análisis Inteligente (IA)
+          <span class="badge">Auto-generado</span>
+        </div>
+        <div class="ai-grid" id="ai-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- DATA TABLE SECTION -->
+      <section id="table-section">
+        <div class="section-title">
+          <span class="icon">📋</span> Datos Detallados
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-tabs">
+              <button class="table-tab active" data-table="cedulas">Cédulas</button>
+              <button class="table-tab" data-table="pasaportes">Pasaportes</button>
+              <button class="table-tab" data-table="combined">Consolidado</button>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);" id="table-summary-text"></div>
+          </div>
+          <div class="table-wrapper" id="table-wrapper">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer id="main-footer">
+      Sistema de Producción Documental © 2026 — Dashboard Analítico v2.0 · Generado con análisis de IA
+    </footer>
+  </div>
+
+  <!-- UPLOAD MODAL -->
+  <div class="modal-overlay" id="upload-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">📤 Cargar Datos CSV</div>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-zone-icon">📁</div>
+        <div class="drop-zone-text">Arrastre archivos CSV aquí o haga clic para seleccionar</div>
+        <div class="drop-zone-hint">Formato: Hora/Dia, 1, 2, ..., 30 — Archivos: cedulas.csv, pasaportes.csv</div>
+        <input type="file" id="file-input" accept=".csv" multiple style="display:none;">
+      </div>
+      <div class="file-list" id="file-list"></div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="modal-cancel">Cancelar</button>
+        <button class="modal-btn confirm" id="modal-confirm" disabled>Procesar Datos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- CDN SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+
+  <script>
+    /* ================================================================
+       GLOBAL STATE
+    ================================================================ */
+    const STATE = {
+      cedulas: null,
+      pasaportes: null,
+      rawCedulas: null,
+      rawPasaportes: null,
+      charts: {},
+      activeHeatmap: 'cedulas',
+      activeTable: 'cedulas',
+      uploadedFiles: {}
+    };
+
+    /* ================================================================
+       INITIALIZATION
+    ================================================================ */
+    document.addEventListener('DOMContentLoaded', () => {
+      startClock();
+      loadData();
+      bindEvents();
+    });
+
+    async function loadData() {
+      try {
+        const [cedulasRes, pasaportesRes] = await Promise.all([
+          fetch('cedulas.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+          fetch('pasaportes.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); })
+        ]);
+        STATE.rawCedulas = cedulasRes;
+        STATE.rawPasaportes = pasaportesRes;
+        STATE.cedulas = parseCSV(cedulasRes);
+        STATE.pasaportes = parseCSV(pasaportesRes);
+        renderAll();
+        hideLoading();
+        showToast('Datos cargados correctamente', 'success');
+      } catch (e) {
+        hideLoading();
+        showToast('No se pudieron cargar los CSV automáticamente. Use "Cargar Datos" para subir los archivos.', 'warning');
+      }
+    }
+
+    function hideLoading() {
+      setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 400);
+    }
+
+    /* ================================================================
+       CSV PARSING
+    ================================================================ */
+    function parseCSV(csvText) {
+      const result = Papa.parse(csvText.trim(), { header: false, skipEmptyLines: true });
+      const rows = result.data;
+      const headers = rows[0];
+      const days = headers.slice(1).map(Number);
+      const hourlyData = [];
+      let totals = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const label = (row[0] || '').trim();
+        const values = row.slice(1).map(v => parseInt(v) || 0);
+        if (label.toUpperCase() === 'TOTAL') {
+          totals = values;
+        } else if (label) {
+          hourlyData.push({ hour: label, values });
+        }
+      }
+
+      const grandTotal = totals.reduce((a, b) => a + b, 0);
+      const hourlyTotals = hourlyData.map(h => h.values.reduce((a, b) => a + b, 0));
+
+      return { days, hourlyData, totals, grandTotal, hourlyTotals, numDays: days.length };
+    }
+
+    /* ================================================================
+       RENDER ALL
+    ================================================================ */
+    function renderAll() {
+      if (!STATE.cedulas || !STATE.pasaportes) return;
+      renderKPIs();
+      renderCharts();
+      renderHeatmap();
+      renderDataTable();
+      renderAIInsights();
+    }
+
+    /* ================================================================
+       KPI RENDERING
+    ================================================================ */
+    function renderKPIs() {
+      const c = STATE.cedulas;
+      const p = STATE.pasaportes;
+      const totalCedulas = c.grandTotal;
+      const totalPasaportes = p.grandTotal;
+      const totalGeneral = totalCedulas + totalPasaportes;
+
+      // Active days (days with meaningful production > 500 combined)
+      const combinedDailyTotals = c.totals.map((v, i) => v + p.totals[i]);
+      const activeDays = combinedDailyTotals.filter(v => v > 500);
+      const avgDaily = activeDays.length > 0 ? Math.round(activeDays.reduce((a, b) => a + b, 0) / activeDays.length) : 0;
+
+      // Peak hour
+      const combinedHourly = c.hourlyTotals.map((v, i) => v + p.hourlyTotals[i]);
+      const peakHourIdx = combinedHourly.indexOf(Math.max(...combinedHourly));
+      const peakHour = c.hourlyData[peakHourIdx] ? c.hourlyData[peakHourIdx].hour : 'N/A';
+      const peakVal = combinedHourly[peakHourIdx] || 0;
+
+      // Best day
+      const bestDayIdx = combinedDailyTotals.indexOf(Math.max(...combinedDailyTotals));
+      const bestDay = c.days[bestDayIdx] || 'N/A';
+      const bestDayVal = combinedDailyTotals[bestDayIdx] || 0;
+
+      const kpis = [
+        { accent: 'cedulas', icon: '🪪', label: 'Total Cédulas', value: formatNum(totalCedulas), detail: `${c.numDays} días registrados` },
+        { accent: 'pasaportes', icon: '🛂', label: 'Total Pasaportes', value: formatNum(totalPasaportes), detail: `${p.numDays} días registrados` },
+        { accent: 'total', icon: '📦', label: 'Producción Total', value: formatNum(totalGeneral), detail: `${formatNum(totalCedulas)} + ${formatNum(totalPasaportes)}` },
+        { accent: 'avg', icon: '📏', label: 'Promedio Diario', value: formatNum(avgDaily), detail: `${activeDays.length} días activos` },
+        { accent: 'peak', icon: '⏱️', label: 'Hora Pico', value: peakHour, detail: `${formatNum(peakVal)} docs en total` },
+        { accent: 'best', icon: '🏆', label: 'Día Más Productivo', value: `Día ${bestDay}`, detail: `${formatNum(bestDayVal)} documentos` }
+      ];
+
+      const grid = document.getElementById('kpi-grid');
+      grid.innerHTML = kpis.map(k => `
+        <div class="kpi-card" data-accent="${k.accent}">
+          <div class="kpi-header">
+            <span class="kpi-label">${k.label}</span>
+            <div class="kpi-icon">${k.icon}</div>
+          </div>
+          <div class="kpi-value">${k.value}</div>
+          <div class="kpi-detail">${k.detail}</div>
+        </div>
+      `).join('');
+    }
+
+    /* ================================================================
+       CHART RENDERING
+    ================================================================ */
+    function renderCharts() {
+      // Destroy existing charts
+      Object.values(STATE.charts).forEach(ch => ch.destroy && ch.destroy());
+      STATE.charts = {};
+
+      renderDailyChart();
+      renderHourlyChart();
+      renderDoughnutChart();
+    }
+
+    function renderDailyChart() {
+      const ctx = document.getElementById('chart-daily').getContext('2d');
+      STATE.charts.daily = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: STATE.cedulas.days.map(d => `Día ${d}`),
+          datasets: [
+            {
+              label: 'Cédulas',
+              data: STATE.cedulas.totals,
+              backgroundColor: 'rgba(59, 130, 246, 0.65)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 1,
+              borderRadius: 4,
+              borderSkipped: false
+            },
+            {
+              label: 'Pasaportes',
+              data: STATE.pasaportes.totals,
+              backgroundColor: 'rgba(139, 92, 246, 0.65)',
+              borderColor: 'rgba(139, 92, 246, 1)',
+              borderWidth: 1,
+              borderRadius: 4,
+              borderSkipped: false
             }
-            return data;
-        };
-
-        let dbState = GENERATE_DEMO_DATA();
-        let charts = {};
-        let currentHeatmapTab = 'CEDULA';
-
-        // --- PARSER COMPRENSIVO Y TOLERANTE A ERRORES (Anti-Crash) ---
-        function safeParseCSV(text, tipoDefecto) {
-            if (!text || typeof text !== 'string') return [];
-            
-            const lines = text.split(/\r?\n/);
-            if (lines.length < 2) return [];
-
-            // Detectar delimitador de forma adaptativa
-            const headerLine = lines[0];
-            let delim = ',';
-            if (headerLine.includes(';')) delim = ';';
-            else if (headerLine.includes('\t')) delim = '\t';
-
-            const headers = headerLine.split(delim).map(h => h.trim().toLowerCase().replace(/["']/g, ''));
-            
-            // Índices esperados
-            const idxFecha = headers.findIndex(h => h.includes('fecha') || h.includes('date'));
-            const idxHora = headers.findIndex(h => h.includes('hora') || h.includes('time'));
-            const idxCant = headers.findIndex(h => h.includes('cantidad') || h.includes('count') || h.includes('total'));
-
-            const resultado = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue; // Saltar filas vacías
-
-                const cells = line.split(delim).map(c => c.trim().replace(/["']/g, ''));
-                
-                // Validación estructural mínima
-                if (cells.length < Math.max(idxFecha, idxHora, idxCant) + 1) continue;
-
-                try {
-                    // Limpieza estricta de Fecha
-                    let rawFecha = cells[idxFecha] || '';
-                    if (!rawFecha) continue;
-                    // Asegurar formato YYYY-MM-DD si viene en formato nativo o similar
-                    let fechaValida = rawFecha.split(' ')[0]; 
-
-                    // Limpieza estricta de Hora (Normalizar a HH:00)
-                    let rawHora = cells[idxHora] || '08:00';
-                    let horaMatch = rawHora.match(/^(\d{1,2})/);
-                    let horaValida = horaMatch ? `${horaMatch[1].padStart(2, '0')}:00` : '08:00';
-
-                    // Limpieza estricta de Cantidad
-                    let rawCant = cells[idxCant] || '1';
-                    let cantValida = parseInt(rawCant.replace(/[^\d]/g, ''), 10);
-                    if (isNaN(cantValida)) cantValida = 1;
-
-                    resultado.push({
-                        fecha: fechaValida,
-                        hora: horaValida,
-                        tipo: tipoDefecto,
-                        cantidad: cantValida
-                    });
-                } catch (err) {
-                    console.warn(`Fila ${i} descartada por inconsistencias:`, err);
-                }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12, weight: 500 }, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+            tooltip: {
+              backgroundColor: 'rgba(13, 19, 33, 0.95)',
+              titleColor: '#f1f5f9', bodyColor: '#94a3b8',
+              borderColor: 'rgba(148, 163, 184, 0.15)', borderWidth: 1,
+              cornerRadius: 8, padding: 12,
+              titleFont: { family: 'Inter', weight: 700 },
+              bodyFont: { family: 'Inter' },
+              callbacks: { label: ctx => `${ctx.dataset.label}: ${formatNum(ctx.raw)}` }
             }
-            return resultado;
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { family: 'Inter', size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(148, 163, 184, 0.06)' } },
+            y: { ticks: { color: '#64748b', font: { family: 'Inter', size: 11 }, callback: v => formatNum(v) }, grid: { color: 'rgba(148, 163, 184, 0.06)' } }
+          }
         }
+      });
+    }
 
-        // --- PROCESAMIENTO DE NEGOCIO ---
-        function computeMetrics(data) {
-            let cedulas = 0, pasaportes = 0;
-            const porDia = {}, porHora = {}, matrizHM = { 'CEDULA': {}, 'PASAPORTE': {} };
+    function renderHourlyChart() {
+      const ctx = document.getElementById('chart-hourly').getContext('2d');
+      const gradient1 = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient1.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
+      gradient1.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+      const gradient2 = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient2.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+      gradient2.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
 
-            data.forEach(item => {
-                const cant = item.cantidad;
-                if (item.tipo === 'CEDULA') cedulas += cant;
-                if (item.tipo === 'PASAPORTE') pasaportes += cant;
-
-                porDia[item.fecha] = (porDia[item.fecha] || 0) + cant;
-                porHora[item.hora] = (porHora[item.hora] || 0) + cant;
-
-                // Estructura Matriz Heatmap [Hora][DíaSemana]
-                const dObj = new Date(item.fecha + 'T00:00:00');
-                if (!isNaN(dObj.getTime())) {
-                    const dayOfWeek = dObj.getDay(); 
-                    if (!matrizHM[item.tipo][item.hora]) matrizHM[item.tipo][item.hora] = {};
-                    matrizHM[item.tipo][item.hora][dayOfWeek] = (matrizHM[item.tipo][item.hora][dayOfWeek] || 0) + cant;
-                }
-            });
-
-            // Encontrar Día Pico
-            let maxDiaVal = 0, diaPico = '—';
-            Object.entries(porDia).forEach(([k, v]) => {
-                if (v > maxDiaVal) { maxDiaVal = v; diaPico = k; }
-            });
-
-            // Encontrar Hora Pico
-            let maxHoraVal = 0, horaPico = '—';
-            Object.entries(porHora).forEach(([k, v]) => {
-                if (v > maxHoraVal) { maxHoraVal = v; horaPico = k; }
-            });
-
-            const diasActivos = Object.keys(porDia).length || 1;
-            const promedio = Math.round((cedulas + pasaportes) / diasActivos);
-
-            return { cedulas, pasaportes, total: cedulas + pasaportes, horaPico, diaPico, promedio, porDia, porHora, matrizHM };
-        }
-
-        // --- ORQUESTADOR DE RENDERIZADO Y UI ---
-        function updateDashboard() {
-            const metrics = computeMetrics(dbState);
-
-            // Animar Contadores Globales
-            document.getElementById('kpi-cedulas').innerText = metrics.cedulas.toLocaleString();
-            document.getElementById('kpi-pasaportes').innerText = metrics.pasaportes.toLocaleString();
-            document.getElementById('kpi-total').innerText = metrics.total.toLocaleString();
-            document.getElementById('kpi-hora').innerText = metrics.horaPico;
-            document.getElementById('kpi-dia').innerText = metrics.diaPico;
-            document.getElementById('kpi-promedio').innerText = metrics.promedio.toLocaleString();
-
-            // Actualizar MRZ Code Estético
-            document.getElementById('mrz-container').innerHTML = `
-                P&lt;ECU${metrics.diaPico.replace(/-/g, '')}&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>
-                ${String(metrics.total).padStart(9, '0')}ESP0000000M${metrics.horaPico.replace(':', '')}000&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;02
-            `.toUpperCase();
-
-            renderLineChart(metrics.porDia);
-            renderBarChart(metrics.porHora);
-            renderProjectionChart(metrics.porDia);
-            renderHeatmap(metrics.matrizHM[currentHeatmapTab]);
-            renderRanking(metrics.porDia);
-        }
-
-        // --- RENDERIZACIÓN DE COMPONENTES DE CHART.JS ---
-        function renderLineChart(porDia) {
-            const ordenados = Object.keys(porDia).sort();
-            const valores = ordenados.map(k => porDia[k]);
-
-            if (charts.lineas) charts.lineas.destroy();
-
-            const ctx = document.getElementById('chart-lineas').getContext('2d');
-            charts.lineas = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ordenados.map(f => f.substring(5)),
-                    datasets: [{
-                        label: 'Trámites',
-                        data: valores,
-                        borderColor: '#6366f1',
-                        borderWidth: 2.5,
-                        backgroundColor: 'rgba(99, 102, 241, 0.05)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 2,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3af', font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        function renderBarChart(porHora) {
-            const horas = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
-            const valores = horas.map(h => porHora[h] || 0);
-
-            if (charts.barras) charts.barras.destroy();
-
-            const ctx = document.getElementById('chart-barras').getContext('2d');
-            charts.barras = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: horas.map(h => h.split(':')[0] + 'h'),
-                    datasets: [{
-                        label: 'Volumen',
-                        data: valores,
-                        backgroundColor: 'rgba(139, 92, 246, 0.75)',
-                        hoverBackgroundColor: '#8b5cf6',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', autoSkip: false, font: { size: 9 } } },
-                        y: { 
-                            type: 'logarithmic',
-                            grid: { color: 'rgba(255,255,255,0.04)' }, 
-                            ticks: { color: '#9ca3af', font: { size: 10 } } 
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderProjectionChart(porDia) {
-            const fechas = Object.keys(porDia).sort();
-            const y = fechas.map(k => porDia[k]);
-            const n = y.length;
-
-            if(n === 0) return;
-
-            // Mínimos Cuadrados para la Regresión Lineal
-            const x = Array.from({ length: n }, (_, i) => i);
-            const sumX = x.reduce((a, b) => a + b, 0);
-            const sumY = y.reduce((a, b) => a + b, 0);
-            const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
-            const sumXX = x.reduce((a, b) => a + b * b, 0);
-
-            const pendiente = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
-            const intercepto = (sumY - pendiente * sumX) / n;
-
-            // Proyectar siguientes 7 pasos
-            const proyLabels = [...fechas.map(f => f.substring(5))];
-            const datasetHistorico = [...y];
-            const datasetTendencia = x.map(i => pendiente * i + intercepto);
-            const datasetProyeccion = Array(n).fill(null);
-
-            datasetProyeccion[n - 1] = y[n - 1]; // Conectar última curva real
-
-            let ultimaFecha = new Date(fechas[n - 1] + 'T00:00:00');
-            for (let i = 1; i <= 7; i++) {
-                const sgte = new Date(ultimaFecha);
-                sgte.setDate(ultimaFecha.getDate() + i);
-                proyLabels.push(sgte.toISOString().split('T')[0].substring(5));
-                
-                const valProy = Math.max(0, Math.round(pendiente * (n - 1 + i) + intercepto));
-                datasetProyeccion.push(valProy);
-                datasetHistorico.push(null);
+      STATE.charts.hourly = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: STATE.cedulas.hourlyData.map(h => h.hour),
+          datasets: [
+            {
+              label: 'Cédulas',
+              data: STATE.cedulas.hourlyTotals,
+              borderColor: '#3b82f6',
+              backgroundColor: gradient1,
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2.5,
+              pointRadius: 3,
+              pointBackgroundColor: '#3b82f6',
+              pointBorderColor: '#0d1321',
+              pointBorderWidth: 2,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Pasaportes',
+              data: STATE.pasaportes.hourlyTotals,
+              borderColor: '#8b5cf6',
+              backgroundColor: gradient2,
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2.5,
+              pointRadius: 3,
+              pointBackgroundColor: '#8b5cf6',
+              pointBorderColor: '#0d1321',
+              pointBorderWidth: 2,
+              pointHoverRadius: 6
             }
-
-            if (charts.proyeccion) charts.proyeccion.destroy();
-
-            const ctx = document.getElementById('chart-proyeccion').getContext('2d');
-            charts.proyeccion = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: proyLabels,
-                    datasets: [
-                        { label: 'Histórico Real', data: datasetHistorico, borderColor: '#3b82f6', borderWidth: 2, fill: false, tension: 0.1 },
-                        { label: 'Predicción IA', data: datasetProyeccion, borderColor: '#f59e0b', borderWidth: 2, borderDash: [6, 4], fill: false, tension: 0.1 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3af', font: { size: 10 } } }
-                    },
-                    plugins: { legend: { labels: { color: '#f3f4f6', font: { size: 11 } } } }
-                }
-            });
-        }
-
-        function renderHeatmap(matriz) {
-            const container = document.getElementById('heatmap-container');
-            container.innerHTML = '';
-
-            const diasNombre = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-            
-            // Render Cabecera de Esquina y Días
-            container.appendChild(createCell('Hora/Día', 'font-semibold text-gray-500 pb-2 text-left'));
-            diasNombre.forEach(d => container.appendChild(createCell(d, 'font-semibold text-gray-400 pb-2 text-center')));
-
-            // Encontrar Máximo absoluto para normalización de color opacidad
-            let maxVal = 1;
-            Object.values(matriz).forEach(hRow => {
-                Object.values(hRow).forEach(v => { if (v > maxVal) maxVal = v; });
-            });
-
-            // Generar filas por franja de atención operativa (08h a 17h)
-            for (let h = 8; h <= 17; h++) {
-                const horaStr = `${String(h).padStart(2, '0')}:00`;
-                container.appendChild(createCell(horaStr, 'font-medium text-gray-400 py-1 text-left border-r border-gray-800/60 pr-1'));
-
-                for (let d = 0; d < 7; d++) {
-                    const count = (matriz[horaStr] && matriz[horaStr][d]) || 0;
-                    const peso = count / maxVal;
-                    
-                    const celda = document.createElement('div');
-                    celda.className = 'rounded text-[9px] flex items-center justify-center font-semibold text-white/90 transition-all hover:scale-105';
-                    celda.style.height = '26px';
-                    celda.innerText = count > 0 ? count : '';
-                    
-                    // Gradientes Premium dinámicos según volumen
-                    if (count > 0) {
-                        celda.style.backgroundColor = currentHeatmapTab === 'CEDULA' 
-                            ? `rgba(99, 102, 241, ${0.15 + peso * 0.85})` 
-                            : `rgba(139, 92, 246, ${0.15 + peso * 0.85})`;
-                    } else {
-                        celda.style.backgroundColor = 'rgba(255,255,255,0.02)';
-                    }
-                    celda.title = `${count} trámites registrados`;
-                    container.appendChild(celda);
-                }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12, weight: 500 }, padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: 'rgba(13, 19, 33, 0.95)',
+              titleColor: '#f1f5f9', bodyColor: '#94a3b8',
+              borderColor: 'rgba(148, 163, 184, 0.15)', borderWidth: 1,
+              cornerRadius: 8, padding: 12,
+              titleFont: { family: 'Inter', weight: 700 },
+              bodyFont: { family: 'Inter' },
+              callbacks: { label: ctx => `${ctx.dataset.label}: ${formatNum(ctx.raw)}` }
             }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }, grid: { color: 'rgba(148, 163, 184, 0.06)' } },
+            y: { ticks: { color: '#64748b', font: { family: 'Inter', size: 11 }, callback: v => formatNum(v) }, grid: { color: 'rgba(148, 163, 184, 0.06)' } }
+          }
         }
+      });
+    }
 
-        function createCell(text, className) {
-            const el = document.createElement('div');
-            el.className = className + ' flex items-center';
-            el.innerText = text;
-            return el;
+    function renderDoughnutChart() {
+      const ctx = document.getElementById('chart-doughnut').getContext('2d');
+      const totalC = STATE.cedulas.grandTotal;
+      const totalP = STATE.pasaportes.grandTotal;
+      const pctC = ((totalC / (totalC + totalP)) * 100).toFixed(1);
+      const pctP = ((totalP / (totalC + totalP)) * 100).toFixed(1);
+
+      STATE.charts.doughnut = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [`Cédulas (${pctC}%)`, `Pasaportes (${pctP}%)`],
+          datasets: [{
+            data: [totalC, totalP],
+            backgroundColor: ['rgba(59, 130, 246, 0.75)', 'rgba(139, 92, 246, 0.75)'],
+            borderColor: ['#3b82f6', '#8b5cf6'],
+            borderWidth: 2,
+            hoverBackgroundColor: ['rgba(59, 130, 246, 0.9)', 'rgba(139, 92, 246, 0.9)'],
+            spacing: 4,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#94a3b8', font: { family: 'Inter', size: 13, weight: 600 }, padding: 20, usePointStyle: true, pointStyle: 'rectRounded' }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(13, 19, 33, 0.95)',
+              titleColor: '#f1f5f9', bodyColor: '#94a3b8',
+              borderColor: 'rgba(148, 163, 184, 0.15)', borderWidth: 1,
+              cornerRadius: 8, padding: 12,
+              titleFont: { family: 'Inter', weight: 700 },
+              bodyFont: { family: 'Inter' },
+              callbacks: { label: ctx => ` ${formatNum(ctx.raw)} documentos` }
+            }
+          }
         }
+      });
+    }
 
-        function renderRanking(porDia) {
-            const top10 = Object.entries(porDia)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
+    /* ================================================================
+       HEATMAP RENDERING
+    ================================================================ */
+    function getHeatmapColorForValue(v, maxVal) {
+      if (v === 0) return { bg: 'rgba(255, 255, 255, 0.02)', text: 'var(--text-muted)' };
+      const intensity = maxVal > 0 ? v / maxVal : 0;
+      
+      // Multicolor scale: Blue (220) for low to Red (0) for peak/high production
+      const hue = Math.max(0, 220 - (intensity * 220));
+      const saturation = 85;
+      const lightness = 45;
+      const alpha = 0.15 + intensity * 0.75;
+      
+      return {
+        bg: `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha.toFixed(2)})`,
+        text: intensity > 0.4 ? '#ffffff' : '#cbd5e1'
+      };
+    }
 
-            const maxVal = top10[0] ? top10[0][1] : 1;
-            const body = document.getElementById('ranking-body');
-            body.innerHTML = '';
+    function renderHeatmap() {
+      const wrapper = document.getElementById('heatmap-wrapper');
+      const src = STATE.activeHeatmap === 'cedulas' ? STATE.cedulas
+                : STATE.activeHeatmap === 'pasaportes' ? STATE.pasaportes
+                : null;
 
-            top10.forEach(([fecha, total]) => {
-                const pct = (total / maxVal) * 100;
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-800/30 transition-colors';
-                tr.innerHTML = `
-                    <td class="py-2.5 font-medium text-gray-300">${fecha}</td>
-                    <td class="py-2.5 text-right font-semibold text-gray-100">${total.toLocaleString()}</td>
-                    <td class="py-2.5 pl-4">
-                        <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${pct}%"></div>
-                        </div>
-                    </td>
-                `;
-                body.appendChild(tr);
-            });
-        }
+      let matrix, days, hours;
+      if (src) {
+        days = src.days;
+        hours = src.hourlyData.map(h => h.hour);
+        matrix = src.hourlyData.map(h => h.values);
+      } else {
+        // combined
+        days = STATE.cedulas.days;
+        hours = STATE.cedulas.hourlyData.map(h => h.hour);
+        matrix = STATE.cedulas.hourlyData.map((h, i) =>
+          h.values.map((v, j) => v + STATE.pasaportes.hourlyData[i].values[j])
+        );
+      }
 
-        // --- MANEJADORES DE CARGA DE ARCHIVOS (Drag and Drop / Upload) ---
-        const initDropzone = (idZone, idInput, idStatus, tipo) => {
-            const zone = document.getElementById(idZone);
-            const input = document.getElementById(idInput);
-            const status = document.getElementById(idStatus);
+      // Find max for color scaling
+      const allVals = matrix.flat();
+      const maxVal = Math.max(...allVals.filter(v => v > 0));
 
-            zone.addEventListener('click', () => input.click());
-            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('border-indigo-400'); });
-            zone.addEventListener('dragleave', () => zone.classList.remove('border-indigo-400'));
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.classList.remove('border-indigo-400');
-                if (e.dataTransfer.files.length) procesarArchivo(e.dataTransfer.files[0], status, tipo);
-            });
-            input.addEventListener('change', () => {
-                if (input.files.length) procesarArchivo(input.files[0], status, tipo);
-            });
-        };
+      let html = '<table class="heatmap-table"><thead><tr><th>Hora</th>';
+      days.forEach(d => { html += `<th>${d}</th>`; });
+      html += '</tr></thead><tbody>';
 
-        function procesarArchivo(file, statusElement, tipo) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = safeParseCSV(e.target.result, tipo);
-                    if (parsed.length === 0) throw new Error("Estructura no válida");
-
-                    // Limpiar el estado anterior del mismo tipo y anexar el nuevo
-                    dbState = dbState.filter(item => item.tipo !== tipo).concat(parsed);
-                    
-                    statusElement.classList.remove('hidden');
-                    updateDashboard();
-                } catch (err) {
-                    alert(`Error al procesar el archivo de ${tipo.toLowerCase()}. Verifica que sea un CSV legible con columnas de fecha, hora y cantidad.`);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- CONTROLADORES DE EVENTOS DE INTERFAZ ---
-        document.getElementById('btn-restore').addEventListener('click', () => {
-            dbState = GENERATE_DEMO_DATA();
-            document.getElementById('status-cedulas').classList.add('hidden');
-            document.getElementById('status-pasaportes').classList.add('hidden');
-            updateDashboard();
+      matrix.forEach((row, i) => {
+        html += `<tr><td>${hours[i]}</td>`;
+        row.forEach(v => {
+          const colorInfo = getHeatmapColorForValue(v, maxVal);
+          html += `<td style="background:${colorInfo.bg};color:${colorInfo.text}" title="Día ${days[row.indexOf(v)]}, ${hours[i]}: ${formatNum(v)}">${v > 0 ? v : ''}</td>`;
         });
+        html += '</tr>';
+      });
 
-        const btnHmC = document.getElementById('tab-hm-cedulas');
-        const btnHmP = document.getElementById('tab-hm-pasaportes');
+      // Totals row
+      const totals = STATE.activeHeatmap === 'combined'
+        ? STATE.cedulas.totals.map((v, i) => v + STATE.pasaportes.totals[i])
+        : src.totals;
+      html += '<tr><td><strong>TOTAL</strong></td>';
+      const maxTotal = Math.max(...totals);
+      totals.forEach(v => {
+        const colorInfo = getHeatmapColorForValue(v, maxTotal);
+        html += `<td style="background:${colorInfo.bg};color:${colorInfo.text};font-weight:800">${formatNum(v)}</td>`;
+      });
+      html += '</tr></tbody></table>';
 
-        btnHmC.addEventListener('click', () => {
-            currentHeatmapTab = 'CEDULA';
-            btnHmC.className = "px-3 py-1.5 rounded-md bg-indigo-600 text-white transition-all";
-            btnHmP.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all";
-            updateDashboard();
+      // Legend
+      html += '<div class="heatmap-legend"><span>Menor volumen</span>';
+      for (let i = 0; i <= 5; i++) {
+        const intensity = i / 5;
+        const colorInfo = getHeatmapColorForValue(intensity, 1);
+        html += `<div class="legend-block" style="background:${colorInfo.bg}" title="Intensidad: ${(intensity * 100).toFixed(0)}%"></div>`;
+      }
+      html += '<span>Mayor volumen (Hora Pico)</span></div>';
+
+      wrapper.innerHTML = html;
+    }
+
+    /* ================================================================
+       AI INSIGHTS ENGINE
+    ================================================================ */
+    function renderAIInsights() {
+      const c = STATE.cedulas;
+      const p = STATE.pasaportes;
+      const combined = c.totals.map((v, i) => v + p.totals[i]);
+      const combinedHourly = c.hourlyTotals.map((v, i) => v + p.hourlyTotals[i]);
+
+      // Separate active vs inactive days
+      const THRESHOLD = 500;
+      const activeDayData = [];
+      const inactiveDays = [];
+      combined.forEach((v, i) => {
+        if (v > THRESHOLD) activeDayData.push({ day: c.days[i], total: v, idx: i });
+        else inactiveDays.push({ day: c.days[i], total: v });
+      });
+
+      const activeVals = activeDayData.map(d => d.total);
+      const mean = activeVals.reduce((a, b) => a + b, 0) / activeVals.length;
+      const stddev = Math.sqrt(activeVals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / activeVals.length);
+
+      // INSIGHT 1: Executive Summary
+      const totalGeneral = c.grandTotal + p.grandTotal;
+      const ratio = ((c.grandTotal / totalGeneral) * 100).toFixed(1);
+
+      // INSIGHT 2: Anomaly Detection
+      const anomaliesHigh = activeDayData.filter(d => d.total > mean + 1.5 * stddev);
+      const anomaliesLow = activeDayData.filter(d => d.total < mean - 1.5 * stddev);
+
+      // INSIGHT 3: Hourly Patterns
+      const sortedHours = combinedHourly.map((v, i) => ({ hour: c.hourlyData[i]?.hour || i, total: v }))
+        .sort((a, b) => b.total - a.total);
+      const peakHours = sortedHours.slice(0, 3);
+      const lowHours = sortedHours.filter(h => h.total > 0).slice(-3).reverse();
+
+      // INSIGHT 4: Trend (linear regression on active days)
+      const n = activeVals.length;
+      let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+      activeVals.forEach((y, i) => {
+        sumX += i; sumY += y; sumXY += i * y; sumX2 += i * i;
+      });
+      const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) : 0;
+      const trendDirection = slope > 50 ? 'ascendente' : slope < -50 ? 'descendente' : 'estable';
+      const trendIcon = slope > 50 ? '📈' : slope < -50 ? '📉' : '➡️';
+      const projected = Math.round(mean + slope * n);
+
+      // INSIGHT 5: Efficiency Score
+      const cv = mean > 0 ? stddev / mean : 0;
+      const effScore = Math.max(0, Math.min(100, Math.round((1 - cv * 0.8) * 100)));
+      const effLabel = effScore >= 85 ? 'Excelente' : effScore >= 70 ? 'Buena' : effScore >= 50 ? 'Regular' : 'Necesita Mejora';
+      const effColor = effScore >= 85 ? 'var(--accent-emerald)' : effScore >= 70 ? 'var(--accent-amber)' : 'var(--accent-red)';
+
+      // INSIGHT 6: Recommendations
+      const recommendations = [];
+      if (inactiveDays.length > 0) {
+        recommendations.push(`Se detectaron <strong>${inactiveDays.length} días</strong> con producción mínima (días: ${inactiveDays.map(d => d.day).join(', ')}). Considere planificar mantenimiento o capacitación en estos días.`);
+      }
+      if (peakHours.length > 0) {
+        recommendations.push(`La franja <strong>${peakHours[0].hour} - ${peakHours[2]?.hour || peakHours[0].hour}</strong> concentra el mayor volumen. Refuerce personal y equipos en estas horas.`);
+      }
+      if (anomaliesHigh.length > 0) {
+        recommendations.push(`Los días ${anomaliesHigh.map(a => a.day).join(', ')} tuvieron producción <strong>excepcionalmente alta</strong>. Analice si se debió a demanda acumulada o campañas especiales.`);
+      }
+      if (trendDirection === 'descendente') {
+        recommendations.push(`La tendencia de producción es <strong>descendente</strong>. Evalúe posibles cuellos de botella o disminución de demanda.`);
+      }
+      const cedulasPercentHourly = c.hourlyTotals.map((v, i) => {
+        const total = v + p.hourlyTotals[i];
+        return total > 0 ? (v / total * 100) : 0;
+      });
+      const avgCedulasPct = cedulasPercentHourly.filter(v => v > 0).reduce((a, b) => a + b, 0) / cedulasPercentHourly.filter(v => v > 0).length;
+      recommendations.push(`La proporción cédulas/pasaportes es <strong>${avgCedulasPct.toFixed(0)}%/${(100 - avgCedulasPct).toFixed(0)}%</strong>. Optimice la distribución de estaciones según esta proporción.`);
+
+      const grid = document.getElementById('ai-grid');
+      grid.innerHTML = `
+        <!-- Executive Summary -->
+        <div class="ai-card" style="animation-delay:0.05s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon blue">📊</div>
+            <div class="ai-card-title">Resumen Ejecutivo</div>
+          </div>
+          <div class="ai-card-body">
+            Producción total del período: <strong>${formatNum(totalGeneral)}</strong> documentos.<br>
+            Cédulas representan el <span class="ai-tag info">${ratio}%</span> y pasaportes el <span class="ai-tag neutral">${(100 - parseFloat(ratio)).toFixed(1)}%</span>.<br>
+            Promedio diario (días activos): <strong>${formatNum(Math.round(mean))}</strong> documentos.<br>
+            Desviación estándar: <strong>±${formatNum(Math.round(stddev))}</strong>.
+          </div>
+        </div>
+
+        <!-- Anomaly Detection -->
+        <div class="ai-card" style="animation-delay:0.1s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon red">🔍</div>
+            <div class="ai-card-title">Detección de Anomalías</div>
+          </div>
+          <div class="ai-card-body">
+            ${anomaliesHigh.length > 0
+              ? `<strong>Picos altos:</strong> ${anomaliesHigh.map(a => `Día ${a.day} <span class="ai-tag warning">${formatNum(a.total)}</span>`).join(', ')}<br>`
+              : '<span class="ai-tag positive">Sin picos altos anómalos</span><br>'}
+            ${anomaliesLow.length > 0
+              ? `<strong>Caídas:</strong> ${anomaliesLow.map(a => `Día ${a.day} <span class="ai-tag critical">${formatNum(a.total)}</span>`).join(', ')}<br>`
+              : '<span class="ai-tag positive">Sin caídas anómalas en días activos</span><br>'}
+            ${inactiveDays.length > 0
+              ? `<strong>Días inactivos/mínimos:</strong> ${inactiveDays.map(d => `<span class="ai-tag neutral">Día ${d.day}</span>`).join(' ')}`
+              : ''}
+          </div>
+        </div>
+
+        <!-- Hourly Patterns -->
+        <div class="ai-card" style="animation-delay:0.15s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon green">⏰</div>
+            <div class="ai-card-title">Patrones Horarios</div>
+          </div>
+          <div class="ai-card-body">
+            <strong>Horas pico de producción:</strong><br>
+            ${peakHours.map((h, i) => `${i + 1}. ${h.hour} → <span class="ai-tag positive">${formatNum(h.total)} docs</span>`).join('<br>')}
+            <br><br>
+            <strong>Horas de menor actividad:</strong><br>
+            ${lowHours.map((h, i) => `${i + 1}. ${h.hour} → <span class="ai-tag neutral">${formatNum(h.total)} docs</span>`).join('<br>')}
+          </div>
+        </div>
+
+        <!-- Trend & Prediction -->
+        <div class="ai-card" style="animation-delay:0.2s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon purple">${trendIcon}</div>
+            <div class="ai-card-title">Tendencia y Predicción</div>
+          </div>
+          <div class="ai-card-body">
+            La tendencia de producción es <span class="ai-tag ${trendDirection === 'ascendente' ? 'positive' : trendDirection === 'descendente' ? 'critical' : 'info'}">${trendDirection}</span>
+            con pendiente de <strong>${slope > 0 ? '+' : ''}${Math.round(slope)}</strong> docs/día.<br><br>
+            <strong>Proyección (día siguiente hábil):</strong> <span class="ai-tag info">~${formatNum(projected)} docs</span><br>
+            <strong>Proyección mensual (30 días activos):</strong> <span class="ai-tag info">~${formatNum(projected * 30)} docs</span>
+          </div>
+        </div>
+
+        <!-- Efficiency Score -->
+        <div class="ai-card" style="animation-delay:0.25s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon cyan">⚡</div>
+            <div class="ai-card-title">Score de Eficiencia Operativa</div>
+          </div>
+          <div class="ai-card-body">
+            <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+              <span class="efficiency-score">${effScore}</span>
+              <span style="font-size:18px;font-weight:700;color:${effColor}">/100 — ${effLabel}</span>
+            </div>
+            <div class="efficiency-bar">
+              <div class="efficiency-bar-fill" style="width:${effScore}%;background:${effColor}"></div>
+            </div>
+            <br>
+            Basado en el <strong>coeficiente de variación</strong> (${(cv * 100).toFixed(1)}%) de la producción diaria. Mayor consistencia = mayor score.
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="ai-card" style="animation-delay:0.3s">
+          <div class="ai-card-header">
+            <div class="ai-card-icon amber">💡</div>
+            <div class="ai-card-title">Recomendaciones Operativas</div>
+          </div>
+          <div class="ai-card-body">
+            <ul style="padding-left:18px;display:flex;flex-direction:column;gap:8px;">
+              ${recommendations.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ================================================================
+       DATA TABLE RENDERING
+    ================================================================ */
+    function renderDataTable() {
+      const wrapper = document.getElementById('table-wrapper');
+      const type = STATE.activeTable;
+      let data, days;
+
+      if (type === 'combined') {
+        days = STATE.cedulas.days;
+        const rows = STATE.cedulas.hourlyData.map((h, i) => ({
+          hour: h.hour,
+          values: h.values.map((v, j) => v + STATE.pasaportes.hourlyData[i].values[j])
+        }));
+        const totals = STATE.cedulas.totals.map((v, i) => v + STATE.pasaportes.totals[i]);
+        data = { days, hourlyData: rows, totals, grandTotal: totals.reduce((a, b) => a + b, 0) };
+      } else {
+        data = type === 'cedulas' ? STATE.cedulas : STATE.pasaportes;
+        days = data.days;
+      }
+
+      const allVals = data.hourlyData.flatMap(h => h.values);
+      const maxVal = Math.max(...allVals.filter(v => v > 0));
+
+      let html = '<table class="data-table"><thead><tr><th>Hora/Día</th>';
+      days.forEach(d => { html += `<th>${d}</th>`; });
+      html += '<th>Total</th></tr></thead><tbody>';
+
+      data.hourlyData.forEach(row => {
+        const rowTotal = row.values.reduce((a, b) => a + b, 0);
+        html += `<tr><td>${row.hour}</td>`;
+        row.values.forEach(v => {
+          const intensity = maxVal > 0 ? v / maxVal : 0;
+          const bgColor = type === 'pasaportes'
+            ? `rgba(139, 92, 246, ${(intensity * 0.4).toFixed(3)})`
+            : type === 'combined'
+              ? `rgba(16, 185, 129, ${(intensity * 0.4).toFixed(3)})`
+              : `rgba(59, 130, 246, ${(intensity * 0.4).toFixed(3)})`;
+          html += `<td style="background:${bgColor}">${v > 0 ? formatNum(v) : ''}</td>`;
         });
+        html += `<td style="font-weight:700">${formatNum(rowTotal)}</td></tr>`;
+      });
 
-        btnHmP.addEventListener('click', () => {
-            currentHeatmapTab = 'PASAPORTE';
-            btnHmP.className = "px-3 py-1.5 rounded-md bg-violet-600 text-white transition-all";
-            btnHmC.className = "px-3 py-1.5 rounded-md text-gray-400 hover:text-white transition-all";
-            updateDashboard();
+      // Total row
+      html += '<tr class="total-row"><td>TOTAL</td>';
+      data.totals.forEach(v => { html += `<td>${formatNum(v)}</td>`; });
+      html += `<td>${formatNum(data.grandTotal)}</td></tr>`;
+      html += '</tbody></table>';
+      wrapper.innerHTML = html;
+
+      // Update summary text
+      const summaryEl = document.getElementById('table-summary-text');
+      const label = type === 'cedulas' ? 'Cédulas' : type === 'pasaportes' ? 'Pasaportes' : 'Consolidado';
+      summaryEl.textContent = `${label} — Total: ${formatNum(data.grandTotal)} documentos`;
+    }
+
+    /* ================================================================
+       EVENT BINDING
+    ================================================================ */
+    function bindEvents() {
+      // Upload modal
+      document.getElementById('btn-upload').addEventListener('click', () => {
+        document.getElementById('upload-modal').classList.add('active');
+      });
+      document.getElementById('modal-close').addEventListener('click', closeModal);
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('upload-modal').addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeModal();
+      });
+
+      // Drop zone
+      const dropZone = document.getElementById('drop-zone');
+      const fileInput = document.getElementById('file-input');
+      dropZone.addEventListener('click', () => fileInput.click());
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+      });
+      fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+      // Process uploaded files
+      document.getElementById('modal-confirm').addEventListener('click', processUploadedFiles);
+
+      // Reload
+      document.getElementById('btn-reload').addEventListener('click', () => {
+        showToast('Recargando datos...', 'info');
+        loadData();
+      });
+
+      // Export Excel
+      document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
+
+      // Export PDF
+      document.getElementById('btn-export-pdf').addEventListener('click', exportToPDF);
+
+      // Print
+      document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+      // Heatmap tabs
+      document.querySelectorAll('.heatmap-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.heatmap-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          STATE.activeHeatmap = tab.dataset.heatmap;
+          renderHeatmap();
         });
+      });
 
-        // Iniciar App
-        initDropzone('drop-cedulas', 'file-cedulas', 'status-cedulas', 'CEDULA');
-        initDropzone('drop-pasaportes', 'file-pasaportes', 'status-pasaportes', 'PASAPORTE');
-        updateDashboard();
-    </script>
+      // Table tabs
+      document.querySelectorAll('.table-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.table-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          STATE.activeTable = tab.dataset.table;
+          renderDataTable();
+        });
+      });
+    }
+
+    /* ================================================================
+       FILE UPLOAD HANDLING
+    ================================================================ */
+    function handleFiles(files) {
+      const fileListEl = document.getElementById('file-list');
+      Array.from(files).forEach(file => {
+        if (!file.name.endsWith('.csv')) {
+          showToast(`"${file.name}" no es un archivo CSV válido`, 'error');
+          return;
+        }
+        const key = file.name.toLowerCase().includes('cedula') ? 'cedulas'
+                   : file.name.toLowerCase().includes('pasaporte') ? 'pasaportes'
+                   : file.name.replace('.csv', '');
+
+        STATE.uploadedFiles[key] = file;
+
+        // Update file list UI
+        renderFileList();
+      });
+    }
+
+    function renderFileList() {
+      const fileListEl = document.getElementById('file-list');
+      const confirmBtn = document.getElementById('modal-confirm');
+      fileListEl.innerHTML = '';
+      Object.entries(STATE.uploadedFiles).forEach(([key, file]) => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = `
+          <span>📄 <strong>${key}</strong>: ${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+          <button class="remove-file" data-key="${key}" title="Eliminar">✕</button>
+        `;
+        fileListEl.appendChild(div);
+      });
+
+      // Bind remove buttons
+      fileListEl.querySelectorAll('.remove-file').forEach(btn => {
+        btn.addEventListener('click', () => {
+          delete STATE.uploadedFiles[btn.dataset.key];
+          renderFileList();
+        });
+      });
+
+      confirmBtn.disabled = Object.keys(STATE.uploadedFiles).length === 0;
+    }
+
+    async function processUploadedFiles() {
+      const entries = Object.entries(STATE.uploadedFiles);
+      if (entries.length === 0) return;
+
+      try {
+        for (const [key, file] of entries) {
+          const text = await file.text();
+          const parsed = parseCSV(text);
+
+          if (!parsed.hourlyData.length || !parsed.totals.length) {
+            showToast(`Error: "${file.name}" no tiene la estructura CSV esperada`, 'error');
+            return;
+          }
+
+          if (key === 'cedulas') {
+            STATE.cedulas = parsed;
+            STATE.rawCedulas = text;
+          } else if (key === 'pasaportes') {
+            STATE.pasaportes = parsed;
+            STATE.rawPasaportes = text;
+          }
+        }
+
+        renderAll();
+        closeModal();
+        STATE.uploadedFiles = {};
+        showToast('Datos procesados y dashboard actualizado', 'success');
+      } catch (e) {
+        showToast('Error al procesar los archivos: ' + e.message, 'error');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('upload-modal').classList.remove('active');
+      document.getElementById('file-list').innerHTML = '';
+      document.getElementById('file-input').value = '';
+      STATE.uploadedFiles = {};
+      document.getElementById('modal-confirm').disabled = true;
+    }
+
+    /* ================================================================
+       EXPORT FUNCTIONS
+    ================================================================ */
+    function exportToExcel() {
+      if (!STATE.cedulas || !STATE.pasaportes) {
+        showToast('No hay datos para exportar', 'warning');
+        return;
+      }
+
+      try {
+        const wb = XLSX.utils.book_new();
+
+        // Cédulas sheet
+        const cedulasAOA = buildAOA(STATE.cedulas);
+        const ws1 = XLSX.utils.aoa_to_sheet(cedulasAOA);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Cédulas');
+
+        // Pasaportes sheet
+        const pasaportesAOA = buildAOA(STATE.pasaportes);
+        const ws2 = XLSX.utils.aoa_to_sheet(pasaportesAOA);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Pasaportes');
+
+        // Consolidated sheet
+        const combinedAOA = buildCombinedAOA();
+        const ws3 = XLSX.utils.aoa_to_sheet(combinedAOA);
+        XLSX.utils.book_append_sheet(wb, ws3, 'Consolidado');
+
+        // Summary sheet
+        const summaryData = [
+          ['Resumen de Producción Mensual'],
+          [],
+          ['Métrica', 'Valor'],
+          ['Total Cédulas', STATE.cedulas.grandTotal],
+          ['Total Pasaportes', STATE.pasaportes.grandTotal],
+          ['Producción Total', STATE.cedulas.grandTotal + STATE.pasaportes.grandTotal],
+          ['Días Registrados', STATE.cedulas.numDays],
+          ['Fecha de Exportación', new Date().toLocaleString('es')]
+        ];
+        const ws4 = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, ws4, 'Resumen');
+
+        XLSX.writeFile(wb, `produccion_documental_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        showToast('Archivo Excel generado correctamente', 'success');
+      } catch (e) {
+        showToast('Error al exportar: ' + e.message, 'error');
+      }
+    }
+
+    function buildAOA(data) {
+      const aoa = [['Hora/Dia', ...data.days]];
+      data.hourlyData.forEach(row => {
+        aoa.push([row.hour, ...row.values]);
+      });
+      aoa.push(['TOTAL', ...data.totals]);
+      return aoa;
+    }
+
+    function buildCombinedAOA() {
+      const c = STATE.cedulas;
+      const p = STATE.pasaportes;
+      const aoa = [['Hora/Dia', ...c.days]];
+      c.hourlyData.forEach((row, i) => {
+        aoa.push([row.hour, ...row.values.map((v, j) => v + p.hourlyData[i].values[j])]);
+      });
+      aoa.push(['TOTAL', ...c.totals.map((v, i) => v + p.totals[i])]);
+      return aoa;
+    }
+
+    function exportToPDF() {
+      if (!STATE.cedulas || !STATE.pasaportes) {
+        showToast('No hay datos para exportar', 'warning');
+        return;
+      }
+
+      showToast('Generando PDF, por favor espere...', 'info');
+      const element = document.getElementById('dashboard-content');
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: `dashboard_produccion_${new Date().toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#060a14' },
+        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
+      };
+      html2pdf().set(opt).from(element).save().then(() => {
+        showToast('PDF exportado correctamente', 'success');
+      }).catch(err => {
+        showToast('Error al generar PDF: ' + err.message, 'error');
+      });
+    }
+
+    /* ================================================================
+       UTILITIES
+    ================================================================ */
+    function formatNum(n) {
+      if (n == null || isNaN(n)) return '0';
+      return Number(n).toLocaleString('es-HN');
+    }
+
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function startClock() {
+      const el = document.getElementById('header-clock');
+      function update() {
+        const now = new Date();
+        el.textContent = now.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+          + ' · ' + now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+      update();
+      setInterval(update, 1000);
+    }
+  </script>
 </body>
 </html>
